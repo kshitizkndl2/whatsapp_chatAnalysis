@@ -40,5 +40,5 @@ if uploaded_file is not None:
         helper.fetch_wordcloud(cleaned_df, links)
     
         helper.fetch_most_busy_users(df)
-        
- 
+        helper.most_common_words(cleaned_df,links)
+        helper.fetch_emojis(cleaned_df)

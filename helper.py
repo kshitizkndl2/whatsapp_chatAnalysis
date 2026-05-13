@@ -1,12 +1,28 @@
 import re
 import matplotlib.pyplot as plt
-from numpy import size
 import pandas as pd
 import streamlit as st
 from urlextract import URLExtract
 from wordcloud import WordCloud
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+from collections import Counter
+
+import regex
 
 extract = URLExtract()
+
+
+def _extract_emojis_from_string(s: str) -> list[str]:
+    """Grapheme-aware emoji extraction (no third-party ``emoji`` package)."""
+    if not s:
+        return []
+    found: list[str] = []
+    for cluster in regex.findall(r"\X", s, regex.V1):
+        if regex.search(r"\p{Extended_Pictographic}", cluster):
+            found.append(cluster)
+    return found
 
 
 def _word_count_excluding_links(message, links_longest_first):
@@ -146,8 +162,10 @@ def fetch_wordcloud(wordcloud_df, links):
         st.write("No links shared")
     st.title("Word Cloud of Words Shared")
     if len(wordcloud_df['Message'].values) > 0:
+        stop_words = stopwords.words('english')
         words = wordcloud_df['Message'].values
         words = [word for word in words if not any(link in str(word) for link in links)]
+        words = [word for word in words if word not in stop_words]
         if len(words) > 0:
             words = " ".join(" ".join(words).split('],['))
             wc = WordCloud(width=800, height=800, background_color='black').generate(words)
@@ -159,18 +177,80 @@ def fetch_wordcloud(wordcloud_df, links):
 def fetch_most_busy_users(df):
     st.title("Most Busy Users")
     df = df.copy()
-    df = df[~df['Name'].astype(str).str.contains(',', na=False)]
-    x = df['Name'].value_counts().head(5)
-    name = x.index
-    count = x.values
-    fig, ax = plt.subplots()
-    plt.xticks(rotation=45)
-    ax.bar(name, count) 
-    plt.xlabel("Users")
-    plt.ylabel("Count")
-    plt.title("Most Busy Users")
-    plt.show()
-    st.pyplot(fig)
-    
-    
+    df = df[~df["Name"].astype(str).str.contains(",", na=False)]
+    counts = df["Name"].value_counts().head(5)
+    total = len(df)
+    if total == 0 or counts.empty:
+        st.write("No messages to plot.")
+        return
+
+    names = counts.index.tolist()
+    vals = counts.values
+    n = len(names)
+    fig, ax = plt.subplots(figsize=(10, max(4.0, n * 0.65)))
+    y_pos = range(n)
+    bars = ax.barh(y_pos, vals, color="steelblue")
+    ax.set_yticks(y_pos, labels=names)
+    ax.invert_yaxis()
+    ax.set_xlabel("Messages sent")
+    ax.set_ylabel("User")
+    ax.set_title("Most busy users — % of all messages in this chat")
+    ax.margins(x=0.18)
+    pct_labels = [f"{100 * v / total:.1f}%" for v in vals]
+    ax.bar_label(bars, labels=pct_labels, padding=4, fontsize=10)
+    fig.tight_layout()
+    st.pyplot(fig, clear_figure=True)
+    plt.close(fig)
+def most_common_words(df,links):
+    st.title("Most Common Words")
+    stop_words = stopwords.words('english')
+    words = df['Message'].values
+    words = [word for word in words if not any(link in str(word) for link in links)]
+    unique_words = list(set(words))
+    if len(unique_words) > 0:
+        words = " ".join(" ".join(words).split('],['))
+        words = words.split()
+        word_counts = Counter(words)
+        most_common_words = word_counts.most_common(10)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.barh(range(len(most_common_words)), [count for word, count in most_common_words], align='center')
+        ax.set_yticks(range(len(most_common_words)))
+        ax.set_yticklabels([word for word, count in most_common_words])
+        ax.invert_yaxis()
+        ax.set_xlabel('Frequency')
+        ax.set_title('Most Common Words')
+        st.pyplot(fig, clear_figure=True)
+        plt.close(fig)
+    else:
+        st.write("No words to plot.")
+def fetch_emojis(df):
+    all_emojis = []
+    for message in df["Message"].astype(str):
+        all_emojis.extend(_extract_emojis_from_string(message))
+    if not all_emojis:
+        st.write("No emojis found.")
+        return
+    most_common = Counter(all_emojis).most_common(12)
+    glyphs = [e for e, _ in most_common]
+    counts = [c for _, c in most_common]
+
+    fig, ax = plt.subplots(figsize=(9, 9))
+    _wedges, texts, autotexts = ax.pie(
+        counts,
+        labels=glyphs,
+        autopct="%1.1f%%",
+        startangle=90,
+        counterclock=False,
+        pctdistance=0.75,
+        labeldistance=1.05,
+        textprops={"fontsize": 16},
+    )
+    plt.setp(autotexts, fontsize=10)
+    ax.set_title("Most common emojis")
+    fig.tight_layout()
+    st.pyplot(fig, clear_figure=True)
+    plt.close(fig)
+
+
+
 
