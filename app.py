@@ -3,7 +3,6 @@ import streamlit as st
 import preprocessor,helper
 from wordcloud import WordCloud
 st.sidebar.title("WhatsApp Analysis")
-st.title("Important Note: The chat should be exported from PC's whatsapp App not from whatsapp mobile app.")
 st.title("Note: This app is still in development and may not work as expected.")
 uploaded_file = st.sidebar.file_uploader("Upload your WhatsApp chat()", type="txt")
 
