@@ -2,9 +2,9 @@ import re
 import streamlit as st
 import preprocessor,helper
 from wordcloud import WordCloud
-st.sidebar.title("WhatsApp Analysis")
+st.title("WhatsApp Analysis")
 st.title("Note: This app is still in development and may not work as expected.")
-uploaded_file = st.sidebar.file_uploader("Upload your WhatsApp chat()", type="txt")
+uploaded_file = st.file_uploader("Upload your WhatsApp chat()", type="txt")
 
 if uploaded_file is not None:
     data = uploaded_file.read().decode("utf-8")
@@ -19,10 +19,10 @@ if uploaded_file is not None:
     options.insert(0,'Overall')
     
     
-    selected_user = st.sidebar.selectbox("Select a user", options)
+    selected_user = st.selectbox("Select a user", options)
     stats,cleaned_df,links = helper.fetch_stats(selected_user,df)
 
-    if st.sidebar.button("Show Analysis"):
+    if st.button("Show Analysis"):
         
         col1,col2,col3,col4 = st.columns(4)
         with col1:

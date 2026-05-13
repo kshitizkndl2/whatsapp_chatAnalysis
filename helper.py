@@ -13,6 +13,24 @@ import regex
 
 extract = URLExtract()
 
+_WHATSAPP_TAIL_TAGS = re.compile(
+    r"(?:\s*<This message was edited>|\s*<This message was deleted>)+$",
+    re.IGNORECASE,
+)
+
+
+def _strip_whatsapp_message_suffixes(text) -> str:
+    """Remove trailing WhatsApp export tags (e.g. ``<This message was edited>``)."""
+    if pd.isna(text):
+        return ""
+    s = str(text).strip()
+    while True:
+        prev = s
+        s = _WHATSAPP_TAIL_TAGS.sub("", s).rstrip()
+        if s == prev:
+            break
+    return s
+
 
 def _extract_emojis_from_string(s: str) -> list[str]:
     """Grapheme-aware emoji extraction (no third-party ``emoji`` package)."""
@@ -33,8 +51,13 @@ def _word_count_excluding_links(message, links_longest_first):
         if url in s:
             s = s.replace(url, " ")
     return len(s.split())
-def fetch_stats(name,df):
-    if name != 'Overall':
+
+
+def fetch_stats(name, df):
+    df = df.copy()
+    df["Message"] = df["Message"].apply(_strip_whatsapp_message_suffixes)
+
+    if name != "Overall":
         system_pattern = re.compile(
     r"""
     (missed\s+)?(video|voice)\s+call.*
