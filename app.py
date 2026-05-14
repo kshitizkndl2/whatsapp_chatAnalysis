@@ -117,8 +117,12 @@ with st.expander("Developer — feedback inbox", expanded=False):
     admin_key = _get_feedback_admin_key()
     if not admin_key:
         st.warning(
-            "Set **FEEDBACK_ADMIN_KEY** in the hosting dashboard (environment variable) "
-            "or in **.streamlit/secrets.toml** to unlock this panel."
+            "**This panel is locked until an admin key is configured.**\n\n"
+            "- **On Render (or any host):** open your service → **Environment** → add variable "
+            "`FEEDBACK_ADMIN_KEY` with a long random value → **Save** → **Manual Deploy** (or wait for deploy). "
+            "Render does **not** read `.streamlit/secrets.toml` from Git.\n\n"
+            "- **On your computer only:** create or edit `.streamlit/secrets.toml` and set "
+            "`FEEDBACK_ADMIN_KEY = \"...\"` (see `.streamlit/secrets.toml.example`)."
         )
     else:
         entered = st.text_input("Developer access key", type="password", key="dev_feedback_key")

@@ -10,7 +10,7 @@ _INVIS = "\u200e\u200f"  # LRM / RLM (common in WhatsApp exports)
 # Line patterns
 # ---------------------------------------------------------------------------
 # Anything inside [...] is parsed as "date side, time side" (time matched from the end).
-# Name/message after ``]``: see ``_split_bracket_rest`` (handles ``Name: msg`` and ``A: B: msg``).
+# Name/message after ``]``: first ``": "`` splits sender from body (see ``_split_bracket_rest``).
 PATTERN_BRACKET_LINE = re.compile(r"^\[([^\]\n]+)\]\s*(.+)$")
 
 # Time suffix inside the bracket: ", H:MM[:SS] [AM|pm]" at end of the inner string.
@@ -45,17 +45,20 @@ def _split_bracket_rest(rest: str):
     """
     Split ``rest`` (everything after the closing ``]``) into sender name and message body.
 
-    If there are several ``": "`` sequences (colon + ASCII space), the **last** one usually
-    separates a multi-part display name from the message (e.g. ``John: Doe: hello``).
-    If there is only one ``": "``, it separates ``Name`` from ``message`` as usual.
+    WhatsApp uses the **first** ``": "`` (colon + ASCII space) after the timestamp as the
+    boundary between the sender label and the message. Messages that themselves contain
+    ``Note: ...``, ``Time: ...``, etc. must keep the whole line as the body; splitting on
+    the last ``": "`` would wrongly treat part of the message as the name.
+
+    Trade-off: a display name that literally contains ``": "`` (e.g. ``John: Doe``) plus a
+    message would be parsed as sender ``John`` and body ``Doe: ...``; that case is rare in
+    exports compared to colon-prefixed sentences in the body.
+
     If there is no ``": "``, split on the first bare ``:``.
     """
     rest = rest.strip()
-    n = rest.count(": ")
-    if n >= 2:
-        return rest.rsplit(": ", 1)
-    if n == 1:
-        idx = rest.find(": ")
+    idx = rest.find(": ")
+    if idx != -1:
         return rest[:idx], rest[idx + 2 :]
     m = re.match(r"^([^:]+):(.*)$", rest)
     if not m:
