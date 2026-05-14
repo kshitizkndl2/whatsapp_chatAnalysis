@@ -1,2 +1,6 @@
 myenv
 __pycache__
+feedback_logs/
+
+# Local secrets — never commit (copy from secrets.toml.example)
+.streamlit/secrets.toml
