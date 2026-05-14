@@ -151,7 +151,7 @@ with st.expander("Developer — feedback inbox", expanded=False):
         elif entered:
             st.error("Incorrect key.")
 
-uploaded_file = st.file_uploader("Upload your WhatsApp chat()", type="txt")
+uploaded_file = st.file_uploader("Export your Whatsapp chat without media and Upload your WhatsApp chat here", type="txt")
 
 if uploaded_file is not None:
     try:
